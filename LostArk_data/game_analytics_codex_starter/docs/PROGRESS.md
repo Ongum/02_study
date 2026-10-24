@@ -546,3 +546,54 @@ python -m entertainment_platform.jobs.collect_gcp_incremental --help
   plan exited **0**, indicating no pending managed-resource changes.
 - Regression before deployment: **61 tests passed**; Ruff and Terraform validate
   passed. Actual billed cost is not yet available and is not claimed.
+
+## 2026-10-24 — full-history API audit and one-shot backfill implementation
+
+- An aggregate-only live audit measured 203,166 public Lost Ark Steam reviews
+  through `2026-10-24T02:30:16Z`: 2,032 data pages at 100 rows/page plus a
+  terminal request. No review body or full author identifier was logged.
+- The year distribution was strongly concentrated in 2022 (172,890 reviews),
+  so the fixed range is partitioned by UTC calendar month rather than treated
+  as one fragile cursor chain.
+- Added an unscheduled GCP backfill adapter that stores immutable Raw pages,
+  persists data-before-cursor state every 50 pages, resumes partitions and
+  loads a separate `silver_review_history` table only after all partition
+  counts match their API totals.
+- The existing incremental collector is unchanged. This full-history path is
+  one logical manual batch, not streaming or recurring collection.
+- Offline verification after implementation: 63 tests passed; Ruff check,
+  Ruff format check, compileall and the new CLI help passed. Terraform format
+  completed, while the sandboxed validate attempt again failed because the
+  Google provider plugin did not respond; elevated validation and cloud plan
+  remain pending.
+
+## 2026-10-24 — full-history backfill deployed, resumed and verified
+
+- Elevated Terraform validation passed. The reviewed initial plan created only
+  `silver_review_history` and the unscheduled `steam-review-backfill` Job:
+  two additions, zero changes and zero destroys.
+- Cloud Build `a93f90e7-aab2-4dfb-8524-c32ecc6df340` succeeded for the initial
+  backfill image. Execution `steam-review-backfill-qd8c4` safely persisted
+  monthly/50-page state but exited after Steam reported 23,948 March 2022 rows
+  and returned 23,930 before an empty terminal page.
+- The validation was corrected to keep API-reported totals separate from
+  actually returned rows. It still requires a terminal page, stable reported
+  total, observed/stored unique parity and zero duplicate-version,
+  invalid-timestamp or out-of-range rows. Regression then passed with **64
+  tests** plus Ruff lint and format checks.
+- Cloud Build `b45a9cc4-a892-40b4-b302-6339dca03bf5` succeeded with immutable
+  digest `sha256:2879b4…111d0`. A reviewed Terraform plan updated only the
+  backfill Job image: zero additions, one in-place change and zero destroys.
+- Resumed execution `steam-review-backfill-7q5sk` completed successfully in
+  **18m18.56s**. It reused persisted work and reached terminal pages for all 70
+  UTC-month partitions through the fixed cutoff.
+- The final manifest records **203,144 returned rows** versus **203,166
+  API-reported rows**, a 22-row (0.0108%) reported-but-not-returned source gap.
+  No synthetic rows were created.
+- BigQuery independently verified 203,144 rows and 203,144 unique review IDs,
+  with zero duplicate-version groups, wrong-app rows, invalid timestamps and
+  out-of-range rows. Creation timestamps span `2021-06-11T17:43:16Z` through
+  `2026-10-23T19:23:46Z`.
+- Access-controlled GCS retains 148,682,182 bytes of immutable Raw backfill
+  evidence plus checkpoints and the final manifest. Scheduler listing remained
+  empty, so this is one completed batch rather than streaming collection.

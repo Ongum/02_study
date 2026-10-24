@@ -6,3 +6,7 @@ raw_retention_days = 180
 collector_image     = ""
 create_scheduler    = false
 scheduler_enabled   = false
+create_review_backfill = false
+review_backfill_image  = ""
+review_backfill_start  = "2021-01-01T00:00:00+00:00"
+review_backfill_end    = "2026-10-24T02:30:16+00:00"

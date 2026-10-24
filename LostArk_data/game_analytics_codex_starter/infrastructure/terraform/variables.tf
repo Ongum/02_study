@@ -59,3 +59,37 @@ variable "create_scheduler" {
     error_message = "scheduler_enabled cannot be true when create_scheduler is false."
   }
 }
+
+variable "create_review_backfill" {
+  description = "Creates the manual one-shot full-history Steam review backfill job."
+  type        = bool
+  default     = false
+
+  validation {
+    condition     = !var.create_review_backfill || var.review_backfill_image != ""
+    error_message = "review_backfill_image is required when create_review_backfill is true."
+  }
+}
+
+variable "review_backfill_image" {
+  description = "Immutable Artifact Registry image URI for the one-shot review backfill."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.review_backfill_image == "" || startswith(var.review_backfill_image, "asia-northeast1-docker.pkg.dev/${var.project_id}/collectors/")
+    error_message = "review_backfill_image must come from this project's collectors repository."
+  }
+}
+
+variable "review_backfill_start" {
+  description = "Inclusive fixed UTC creation-time floor for the one-shot review backfill."
+  type        = string
+  default     = "2021-01-01T00:00:00+00:00"
+}
+
+variable "review_backfill_end" {
+  description = "Inclusive fixed UTC creation-time ceiling for the one-shot review backfill."
+  type        = string
+  default     = "2026-10-24T02:30:16+00:00"
+}

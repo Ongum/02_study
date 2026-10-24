@@ -1,6 +1,6 @@
 # Entertainment Data Platform
 
-> **Status: Local 180-day baseline plus one verified manual GCP batch; no recurring schedule.** One Cloud Run execution loaded bounded review, player and news data to GCS/BigQuery. No causal KPI result or business outcome is claimed.
+> **Status: Local 180-day baseline plus one verified manual GCP batch; no recurring schedule.** A resumable one-shot full review-history Job is implemented and awaiting deployment/execution verification. No causal KPI result or business outcome is claimed.
 
 [Current three-state implementation checklist](docs/STATUS_CHECKLIST.md)
 
@@ -206,6 +206,24 @@ continuous reliability evidence.
 ```text
 python -m pytest tests/test_gcp_collection.py -q
 python -m entertainment_platform.jobs.collect_gcp_incremental --help
+```
+
+### One-shot full review-history backfill
+
+The reviewed target is one fixed snapshot from `2021-01-01T00:00:00Z` through
+`2026-10-24T02:30:16Z`. The API audit measured 203,166 matching reviews at the
+cutoff. `collect_gcp_review_backfill` partitions the range by UTC month,
+persists GCS state every 50 pages, resumes on rerun and replaces the dedicated
+`silver_review_history` table only after terminal and integrity checks pass. A
+measured GCP execution completed all 70 UTC-month partitions and loaded
+**203,144 API-returned unique reviews**. Steam reported 203,166; the 22-row
+(0.0108%) reported-but-not-returned difference is explicit in the final
+manifest and was not imputed. BigQuery verification found zero duplicate
+version groups, wrong-app rows, invalid timestamps or out-of-range rows. The
+batch remains unscheduled.
+
+```text
+python -m entertainment_platform.jobs.collect_gcp_review_backfill --help
 ```
 
 ## Security / evidence

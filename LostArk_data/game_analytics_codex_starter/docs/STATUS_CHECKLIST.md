@@ -45,25 +45,26 @@ Update this file at the end of every meaningful implementation change:
 | ST-14 | Scheduled reliability and cloud-cost measurement | ⏳ 대기 | Only manual local cadence evidence exists; no deployed execution or measured cloud cost | Multi-day job history, gaps, latency and cost reported from verified deployment |
 | ST-15 | Dashboard delivery choice and implementation | ⏳ 대기 | Public dashboard versus bounded static report remains open as D-011 | Owner selects approach and privacy/cost-bounded artifact is verified |
 | ST-16 | Portfolio publication and impact evidence | 🚧 진행 중 | Initial project was published to GitHub `Ongum/02_study` on `master` in commit `e96539c`; career/social evidence and an audited demo remain incomplete | Audited demo, reproduction guide and evidence-limited impact narrative are complete |
+| ST-17 | One-shot full review-history backfill | ✅ 완료 | Execution `steam-review-backfill-7q5sk` completed all 70 UTC-month partitions. BigQuery contains 203,144 unique reviews with zero duplicate-version, wrong-app, invalid-timestamp or out-of-range rows; the API reported 203,166 and the 22-row non-return gap is explicit in the final manifest. Raw evidence and 50-page checkpoints are preserved; no Scheduler exists | Preserve the fixed cutoff, manifest and access controls; treat the 22-row API-report gap as measured source behavior |
 
 ## Current next action
 
-**ST-13:** implement the first dbt staging models and schema tests for the three
-verified BigQuery tables. Compile first; do not schedule recurring collection.
+**ST-13:** implement the first reviewed dbt BigQuery models and tests against
+the verified `silver_review_history` input without changing collection cadence.
 
 ## Verification snapshot
 
 Measured on 2026-10-24:
 
-- `python -m pytest -q` → **61 passed in 0.82s**.
-- `python -m ruff check src tests` → passed.
-- `python -m ruff format --check src tests` → 55 files already formatted.
+- `python -m pytest -q` → **64 passed in 1.33s**.
+- `python -m ruff check .` → passed.
+- `python -m ruff format --check .` → 88 files already formatted.
 - `python -m compileall -q src tests` → passed.
 - Collector CLI `--help` → passed without credentials or network access.
 - Terraform `fmt -check` → passed with bundled Terraform 1.15.9.
 - Docker image run → not verified; local Docker daemon was not running.
-- Terraform `validate` → not verified; Google provider plugin did not respond.
-- GCP apply/deployment/API mutation → not performed.
+- Terraform `validate` → passed before deployment with the bundled Terraform
+  binary and installed Google provider.
 - GitHub initial publication → commit `e96539c` pushed to
   `Ongum/02_study` `master`; ignored Raw/output/Terraform state files were not
   included.
@@ -79,4 +80,12 @@ Measured on 2026-10-24:
 - Verified BigQuery rows → reviews **100**, player snapshots **1**, news **1**.
 - Measured current-player observation → **6,369** at
   `2026-10-24T02:16:20.066178Z`; this single point is not a trend.
+- Full-history Cloud Run execution `steam-review-backfill-7q5sk` → completed in
+  **18m18.56s**, one task succeeded, no Scheduler.
+- Full-history BigQuery verification → **203,144 rows / 203,144 unique
+  reviews**, with zero duplicate-version groups, wrong-app rows, invalid
+  timestamps or out-of-range rows. Steam reported 203,166; **22 rows (0.0108%)
+  were reported but not returned before terminal pages** and are recorded in
+  the manifest rather than imputed.
+- Full-history Raw evidence → **148,682,182 bytes** in access-controlled GCS.
 

@@ -16,7 +16,7 @@ import os
 import re
 import time
 import urllib.request
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -26,7 +26,7 @@ from entertainment_platform.common.checkpoint import (
     write_json_checkpoint,
 )
 from entertainment_platform.common.http import RetryPolicy, fetch_bytes_with_retry
-from entertainment_platform.common.jsonl import append_unique_jsonl
+from entertainment_platform.common.jsonl import append_unique_jsonl, read_jsonl_keys
 from entertainment_platform.connectors.steam.api import build_review_request_url
 from entertainment_platform.connectors.steam.reviews import parse_review_page
 from entertainment_platform.jobs.offline_steam_reviews import DEDUPLICATION_KEY
@@ -170,6 +170,7 @@ def run_backfill(
     pages_fetched = 0
     http_attempts = 0
     rows_written = 0
+    history_keys = read_jsonl_keys(history_path, DEDUPLICATION_KEY)
     seen_cursor_hashes: set[str] = set()
     completion_reason = "page_cap"
 
@@ -222,6 +223,7 @@ def run_backfill(
             history_path,
             (review.to_dict() for review in parsed.reviews),
             key_fields=DEDUPLICATION_KEY,
+            known_keys=history_keys,
         )
 
         completed = not parsed.reviews
@@ -324,7 +326,6 @@ def _result_from_storage(
     rows_written: int,
     completion_reason: str,
 ) -> BackfillResult:
-    rows = _read_history(history_path)
     keys: set[tuple[object, object, object]] = set()
     review_ids: set[str] = set()
     created_values: list[datetime] = []
@@ -335,7 +336,7 @@ def _result_from_storage(
     start_utc = range_start.astimezone(UTC)
     end_utc = range_end.astimezone(UTC)
 
-    for row in rows:
+    for row in _iter_history(history_path):
         key = (row.get("appid"), row.get("recommendationid"), row.get("updated_at"))
         if key in keys:
             duplicate_versions += 1
@@ -442,8 +443,8 @@ def _validate_arguments(
         raise ValueError("range_end must be timezone-aware")
     if range_start > range_end:
         raise ValueError("range_start must not exceed range_end")
-    if not 1 <= max_pages_per_run <= 25:
-        raise ValueError("max_pages_per_run must be in [1, 25]")
+    if not 1 <= max_pages_per_run <= 100:
+        raise ValueError("max_pages_per_run must be in [1, 100]")
     if not 1 <= page_size <= 100:
         raise ValueError("page_size must be in [1, 100]")
     if not 0 <= request_interval_seconds <= 10:
@@ -504,10 +505,9 @@ def _write_once(path: Path, data: bytes) -> None:
     temporary.replace(path)
 
 
-def _read_history(path: Path) -> list[dict[str, object]]:
+def _iter_history(path: Path) -> Iterator[dict[str, object]]:
     if not path.exists():
-        return []
-    rows: list[dict[str, object]] = []
+        return
     with path.open(encoding="utf-8") as handle:
         for line_number, line in enumerate(handle, start=1):
             if not line.strip():
@@ -515,8 +515,7 @@ def _read_history(path: Path) -> list[dict[str, object]]:
             value = json.loads(line)
             if not isinstance(value, dict):
                 raise TypeError(f"history row {line_number} is not an object")
-            rows.append(value)
-    return rows
+            yield value
 
 
 def _parse_utc(value: str) -> datetime:

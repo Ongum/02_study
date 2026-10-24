@@ -18,6 +18,7 @@ def append_unique_jsonl(
     rows: Iterable[Mapping[str, Any]],
     *,
     key_fields: Sequence[str],
+    known_keys: set[tuple[Any, ...]] | None = None,
 ) -> int:
     """Append rows whose compound key is not already present.
 
@@ -30,7 +31,9 @@ def append_unique_jsonl(
     if not key_fields:
         raise ValueError("key_fields must not be empty")
 
-    existing_keys = _read_keys(path, key_fields)
+    existing_keys = (
+        known_keys if known_keys is not None else read_jsonl_keys(path, key_fields)
+    )
     pending: list[dict[str, Any]] = []
     batch_keys: set[tuple[Any, ...]] = set()
 
@@ -57,10 +60,12 @@ def append_unique_jsonl(
         handle.flush()
         os.fsync(handle.fileno())
 
+    if known_keys is not None:
+        known_keys.update(batch_keys)
     return len(pending)
 
 
-def _read_keys(path: Path, key_fields: Sequence[str]) -> set[tuple[Any, ...]]:
+def read_jsonl_keys(path: Path, key_fields: Sequence[str]) -> set[tuple[Any, ...]]:
     if not path.exists():
         return set()
 

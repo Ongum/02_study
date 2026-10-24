@@ -252,6 +252,20 @@ resource "google_bigquery_table" "review_updates" {
   clustering = ["appid", "language", "recommendationid"]
 }
 
+resource "google_bigquery_table" "review_history" {
+  project             = var.project_id
+  dataset_id          = google_bigquery_dataset.analytics.dataset_id
+  table_id            = "silver_review_history"
+  deletion_protection = true
+  schema              = jsonencode(local.review_schema)
+
+  time_partitioning {
+    type  = "DAY"
+    field = "created_at"
+  }
+  clustering = ["appid", "language", "recommendationid"]
+}
+
 resource "google_bigquery_table" "player_snapshots" {
   project             = var.project_id
   dataset_id          = google_bigquery_dataset.analytics.dataset_id
@@ -332,6 +346,70 @@ resource "google_cloud_run_v2_job" "collector" {
     google_bigquery_table.app_news,
     google_bigquery_table.player_snapshots,
     google_bigquery_table.review_updates,
+    google_project_iam_member.ingest_job_user,
+    google_project_iam_member.runtime_log_writer,
+    google_storage_bucket_iam_member.ingest_bronze_creator,
+  ]
+}
+
+resource "google_cloud_run_v2_job" "review_backfill" {
+  for_each = var.review_backfill_image != "" && var.create_review_backfill ? toset(["one-shot"]) : toset([])
+
+  project             = var.project_id
+  name                = "steam-review-backfill"
+  location            = var.region
+  deletion_protection = true
+
+  template {
+    parallelism = 1
+    task_count  = 1
+
+    template {
+      service_account = google_service_account.ingest.email
+      max_retries     = 0
+      timeout         = "7200s"
+
+      containers {
+        image   = var.review_backfill_image
+        command = ["python", "-m", "entertainment_platform.jobs.collect_gcp_review_backfill"]
+        args = [
+          "--start=${var.review_backfill_start}",
+          "--end=${var.review_backfill_end}",
+          "--max-pages-per-chunk=50",
+          "--page-size=100",
+          "--request-interval-seconds=1.0",
+          "--max-total-pages=5000",
+        ]
+
+        resources {
+          limits = {
+            cpu    = "1"
+            memory = "1Gi"
+          }
+        }
+
+        env {
+          name  = "GCP_PROJECT_ID"
+          value = var.project_id
+        }
+        env {
+          name  = "GCP_BUCKET"
+          value = google_storage_bucket.bronze.name
+        }
+        env {
+          name  = "BQ_DATASET"
+          value = google_bigquery_dataset.analytics.dataset_id
+        }
+        env {
+          name  = "STEAM_APP_ID"
+          value = "1599340"
+        }
+      }
+    }
+  }
+
+  depends_on = [
+    google_bigquery_table.review_history,
     google_project_iam_member.ingest_job_user,
     google_project_iam_member.runtime_log_writer,
     google_storage_bucket_iam_member.ingest_bronze_creator,

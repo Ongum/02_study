@@ -33,3 +33,7 @@ output "collector_schedules_enabled" {
 output "collector_scheduler_created" {
   value = var.collector_image != "" && var.create_scheduler
 }
+
+output "review_backfill_job" {
+  value = try(google_cloud_run_v2_job.review_backfill["one-shot"].name, null)
+}

@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import io
+import json
 from datetime import UTC, datetime
 from pathlib import Path
 
 from entertainment_platform.cloud.gcp import GcpClients, upload_immutable
-from entertainment_platform.jobs import collect_gcp_incremental
+from entertainment_platform.jobs import (
+    collect_gcp_incremental,
+    collect_gcp_review_backfill,
+)
 
 
 class NotFound(Exception):
@@ -277,3 +281,113 @@ def test_due_sources_uses_last_success_markers(tmp_path: Path) -> None:
     assert collect_gcp_incremental.due_sources(
         bucket=bucket, now=now, root=tmp_path
     ) == ["reviews", "news"]
+
+
+def test_monthly_partitions_are_inclusive_without_gaps() -> None:
+    partitions = collect_gcp_review_backfill.monthly_partitions(
+        datetime(2026, 1, 15, 12, 0, tzinfo=UTC),
+        datetime(2026, 3, 2, 3, 4, 5, tzinfo=UTC),
+    )
+
+    assert partitions == (
+        (
+            datetime(2026, 1, 15, 12, 0, tzinfo=UTC),
+            datetime(2026, 1, 31, 23, 59, 59, tzinfo=UTC),
+        ),
+        (
+            datetime(2026, 2, 1, 0, 0, tzinfo=UTC),
+            datetime(2026, 2, 28, 23, 59, 59, tzinfo=UTC),
+        ),
+        (
+            datetime(2026, 3, 1, 0, 0, tzinfo=UTC),
+            datetime(2026, 3, 2, 3, 4, 5, tzinfo=UTC),
+        ),
+    )
+
+
+def test_one_shot_gcp_backfill_persists_partitions_and_loads_combined_table() -> None:
+    bucket = FakeBucket()
+    bigquery = FakeBigQuery()
+    clients = GcpClients(
+        storage=FakeStorage(bucket),
+        bigquery=bigquery,
+        load_job_config_factory=lambda: object(),
+    )
+
+    def fake_backfill(**kwargs: object) -> dict[str, object]:
+        range_start = kwargs["range_start"]
+        history_path = kwargs["history_path"]
+        checkpoint_path = kwargs["checkpoint_path"]
+        raw_directory = kwargs["raw_directory"]
+        run_id = kwargs["run_id"]
+        assert isinstance(range_start, datetime)
+        assert isinstance(history_path, Path)
+        assert isinstance(checkpoint_path, Path)
+        assert isinstance(raw_directory, Path)
+        assert isinstance(run_id, str)
+        history_path.parent.mkdir(parents=True, exist_ok=True)
+        history_path.write_text(
+            json.dumps(
+                {
+                    "appid": 1599340,
+                    "recommendationid": f"{range_start:%Y%m}",
+                    "updated_at": f"{range_start:%Y-%m-%dT%H:%M:%SZ}",
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        checkpoint_path.write_text('{"completed":true}\n', encoding="utf-8")
+        raw_directory.mkdir(parents=True, exist_ok=True)
+        (raw_directory / f"{run_id}.json").write_text("{}", encoding="utf-8")
+        return {
+            "pages_fetched_this_run": 2,
+            "pages_committed_total": 2,
+            "rows_observed_total": 1,
+            "unique_reviews_stored": 1,
+            "total_matching_reported": 1,
+            "duplicate_versions_in_storage": 0,
+            "out_of_range_rows": 0,
+            "invalid_timestamp_rows": 0,
+            "completed": True,
+        }
+
+    manifest = collect_gcp_review_backfill.run_gcp_review_backfill(
+        project_id="test-project",
+        bucket_name="test-bucket",
+        dataset="game_analytics",
+        range_start=datetime(2026, 1, 1, tzinfo=UTC),
+        range_end=datetime(2026, 2, 2, tzinfo=UTC),
+        clients=clients,
+        execution_id="review/backfill:1",
+        request_interval_seconds=0,
+        backfill_runner=fake_backfill,
+        now=datetime(2026, 10, 24, tzinfo=UTC),
+    )
+
+    assert manifest["partition_count"] == 2
+    assert manifest["row_count"] == 2
+    assert manifest["expected_rows_from_api"] == 2
+    assert manifest["api_unreturned_rows"] == 0
+    assert "locks/review_backfill.json" not in bucket.store
+    assert "state/review_backfill/spec.json" in bucket.store
+    assert "state/review_backfill/partitions/2026-01/data.jsonl" in bucket.store
+    assert "state/review_backfill/partitions/2026-02/checkpoint.json" in bucket.store
+    assert "manifests/review_backfill/review-backfill-1.json" in bucket.store
+    assert bigquery.loads[0][1] == "test-project.game_analytics.silver_review_history"
+    assert len(bigquery.loads[0][0].splitlines()) == 2
+
+
+def test_completed_partition_records_api_reported_but_unreturned_rows() -> None:
+    quality = collect_gcp_review_backfill._validate_completed_partition(
+        {
+            "rows_observed_total": 23_930,
+            "unique_reviews_stored": 23_930,
+            "total_matching_reported": 23_948,
+            "duplicate_versions_in_storage": 0,
+            "out_of_range_rows": 0,
+            "invalid_timestamp_rows": 0,
+        }
+    )
+
+    assert quality == {"api_unreturned_rows": 18}
