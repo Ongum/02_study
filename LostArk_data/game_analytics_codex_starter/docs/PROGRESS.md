@@ -491,3 +491,20 @@ python -m ruff format --check src tests
 python -m compileall -q src tests
 python -m entertainment_platform.jobs.collect_gcp_incremental --help
 ```
+
+### 2026-10-24 GitHub portfolio publication
+
+- Added `docs/STATUS_CHECKLIST.md` as the single current status source with
+  three states: 완료, 진행 중 and 대기 (D-031). `docs/PROGRESS.md` remains the
+  historical evidence log and `docs/ROADMAP.md` remains the sequence definition.
+- Scanned the publishable tree for common private-key/token patterns; none were
+  found. Confirmed that local `terraform.tfvars`, plans/state, Raw data,
+  generated outputs and bundled tools are ignored.
+- Committed 105 project files as `e96539c` (`feat: add Lost Ark analytics
+  portfolio project`) and pushed it to `Ongum/02_study` `master`.
+- Other untracked directories in the parent repository were not staged or
+  committed.
+- GitHub does not execute workflow files nested inside a project subdirectory.
+  The project-local workflow is explicitly labeled as a monorepo-aware template;
+  installing it in the repository-root `.github/workflows/` remains part of
+  ST-10.

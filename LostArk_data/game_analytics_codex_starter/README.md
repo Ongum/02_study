@@ -2,6 +2,8 @@
 
 > **Status: Complete local 180-day review baseline, aggregate prototypes and offline-tested cloud adapter; not deployed.** No scheduled ingestion, verified cloud execution, causal KPI result, or business outcome is claimed.
 
+[Current three-state implementation checklist](docs/STATUS_CHECKLIST.md)
+
 A reusable, cloud-native analytics foundation for games and digital content. The first case study uses **Lost Ark public Steam signals** to investigate player feedback after updates and to prototype earlier detection of emerging issues.
 
 ## Why this exists
@@ -207,6 +209,11 @@ python -m entertainment_platform.jobs.collect_gcp_incremental --help
 
 ## Security / evidence
 Never commit credentials, Terraform state, personal data or raw review dumps. Use GitHub OIDC / GCP Workload Identity Federation when ready. Explicitly distinguish **measured improvements**, **modeled potential**, and **proposed recommendations**. No causal or social-impact claim without supporting evidence.
+
+This project currently lives inside the `Ongum/02_study` monorepo. GitHub only
+discovers Actions workflows from the repository-root `.github/workflows/`
+directory, so the project-local workflow is a reviewed template, not evidence
+of an active CI run.
 
 ## References
 - [Official Steam review API](https://partner.steamgames.com/doc/webapi/IUserReviewsService)
