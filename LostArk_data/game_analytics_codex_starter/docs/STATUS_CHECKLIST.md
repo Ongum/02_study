@@ -38,9 +38,9 @@ Update this file at the end of every meaningful implementation change:
 | ST-07 | Initial local collection-health assessment | ✅ 완료 | Fixed-clock freshness, gaps, replay ratio and readiness statuses were generated | Results remain labeled as manual local evidence |
 | ST-08 | Offline GCP storage/load adapter | ✅ 완료 | GCS state/locks, immutable Raw retry, zero-row state and deterministic BigQuery load behavior covered by fake-client tests | Offline adapter regression tests continue passing |
 | ST-09 | Multi-day cadence and Updated overlap selection | 🚧 진행 중 | Immediate and roughly nine-hour replays measured; three player snapshots exist, but no multi-day same-time series | Enough scheduled or controlled observations to justify production overlap and cadence tolerances |
-| ST-10 | Container, CI and Terraform pre-deployment validation | 🚧 진행 중 | 61 tests, Ruff, compile, CLI help and Terraform format pass; Docker daemon was unavailable, Google provider validation did not complete, and the monorepo-root CI workflow is not installed | Image build/run, active root CI, `terraform validate`, reviewed plan and bounded dry run all pass |
+| ST-10 | Container and Terraform deployment validation | ✅ 완료 | Cloud Build succeeded for immutable image digest `sha256:47e8c5…db84a`; Terraform validate passed. The destructive first plan was rejected, the revised plan preserved Bronze recovery settings, and post-deployment detailed plan exited 0 | Image provenance, configuration validation and no-drift plan remain reproducible |
 | ST-11 | Effective update times and human validation | 🚧 진행 중 | Announced maintenance/start evidence exists; all `effective_at` values remain null and classifier rows are not human-validated | Independent effective-time evidence and documented review of event/issue labels |
-| ST-12 | GCP foundation apply and least-privilege verification | ⏳ 대기 | Paid-resource mutation requires explicit owner approval; remote state could not be inspected without ADC | Approved apply plus verified bucket, dataset, tables, IAM, budget alert and disabled scheduler |
+| ST-12 | GCP foundation apply and least-privilege verification | ✅ 완료 | One manual Cloud Run execution completed in 24.35s with one successful task. GCS Raw/state/manifests and BigQuery rows were verified; ingest roles are limited to BigQuery jobUser, logging writer, bucket objectUser and dataset WRITER. Scheduler was not created | Preserve reviewed IAM and require a new decision before scheduling or reducing retention |
 | ST-13 | dbt BigQuery models and quality tests | ⏳ 대기 | Local marts exist; dbt project/models have not been implemented against BigQuery | dbt compile/run/tests succeed on reviewed Silver inputs |
 | ST-14 | Scheduled reliability and cloud-cost measurement | ⏳ 대기 | Only manual local cadence evidence exists; no deployed execution or measured cloud cost | Multi-day job history, gaps, latency and cost reported from verified deployment |
 | ST-15 | Dashboard delivery choice and implementation | ⏳ 대기 | Public dashboard versus bounded static report remains open as D-011 | Owner selects approach and privacy/cost-bounded artifact is verified |
@@ -48,9 +48,8 @@ Update this file at the end of every meaningful implementation change:
 
 ## Current next action
 
-**ST-10:** start the local Docker daemon, build the collector image, run its
-credential-free `--help` entrypoint, then retry Terraform validation with the
-bundled provider. This action must not apply Terraform or contact GCP.
+**ST-13:** implement the first dbt staging models and schema tests for the three
+verified BigQuery tables. Compile first; do not schedule recurring collection.
 
 ## Verification snapshot
 
@@ -71,4 +70,13 @@ Measured on 2026-10-24:
 - GitHub Actions → not active for this nested project; a reviewed monorepo-root
   workflow still needs to be installed. The project-local workflow file is a
   template only.
+- Cloud Build → succeeded for the current collector source; immutable digest
+  `sha256:47e8c5…db84a` is deployed.
+- Terraform apply → budget monitoring target and one Cloud Run Job exist;
+  Scheduler does not exist. Post-deployment detailed plan exited **0**.
+- Manual Cloud Run execution `steam-incremental-collector-x9qnd` → completed in
+  **24.35 seconds**, one task succeeded.
+- Verified BigQuery rows → reviews **100**, player snapshots **1**, news **1**.
+- Measured current-player observation → **6,369** at
+  `2026-10-24T02:16:20.066178Z`; this single point is not a trend.
 

@@ -506,5 +506,43 @@ python -m entertainment_platform.jobs.collect_gcp_incremental --help
   committed.
 - GitHub does not execute workflow files nested inside a project subdirectory.
   The project-local workflow is explicitly labeled as a monorepo-aware template;
-  installing it in the repository-root `.github/workflows/` remains part of
-  ST-10.
+  installing it in the repository-root `.github/workflows/` remains a portfolio
+  improvement under ST-16 rather than evidence of the deployed data path.
+
+### 2026-10-24 first manual GCP batch — deployed and measured
+
+- Owner explicitly approved paid GCP work. Every command targeted the dedicated
+  `lostark-ip-analyst` project; the configured default project was not changed.
+- Read-only state refresh confirmed that the bucket, dataset/tables, service
+  accounts, APIs and Artifact Registry already existed. The first reviewed plan
+  was not applied because it would have reduced Bronze lifecycle from 180 to 30
+  days, disabled versioning/soft delete and created an unnecessary paused
+  Scheduler.
+- D-032 records the corrected one-time policy. Terraform now preserves the
+  180-day lifecycle, enabled versioning and seven-day soft delete and omits the
+  Scheduler resource when `create_scheduler=false`.
+- The first apply created the JPY 1,000 monthly monitoring target but truthfully
+  failed to create the job because Cloud Run Gen2 rejected 0.5 vCPU. D-033
+  records the corrected 1 vCPU / 512 MiB configuration.
+- The revised plan contained one job create, zero changes and zero destroys and
+  applied successfully. A current-source Cloud Build then succeeded, and a
+  second reviewed plan updated only the job's immutable image digest.
+- Seeded only the validated review watermark checkpoint. No local review body
+  or full local dataset was uploaded as bootstrap state.
+- Manual execution `steam-incremental-collector-x9qnd` completed successfully
+  in **24.35 seconds** with one succeeded task and no Scheduler.
+- Reviews: one HTTP attempt/page, 100 rows observed and written, overlap floor
+  reached, checkpoint advanced to `2026-10-23T19:23:46Z`, BigQuery row count
+  **100**.
+- Current players: one request and one row written; measured public concurrent
+  count **6,369** at `2026-10-24T02:16:20.066178Z`. One point is not a trend.
+- News: one request/page, one in-range row written, range floor reached,
+  BigQuery row count **1**; update candidates stored **0**.
+- GCS verification found eight state objects totaling 105,885 bytes and three
+  source manifests totaling 1,965 bytes. BigQuery table metadata reported
+  100 review rows, one player row and one news row.
+- Runtime ingest roles observed: project BigQuery job user and log writer,
+  Bronze object user, and dataset writer. Post-deployment Terraform detailed
+  plan exited **0**, indicating no pending managed-resource changes.
+- Regression before deployment: **61 tests passed**; Ruff and Terraform validate
+  passed. Actual billed cost is not yet available and is not claimed.

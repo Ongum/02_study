@@ -27,5 +27,9 @@ output "collector_jobs" {
 }
 
 output "collector_schedules_enabled" {
-  value = var.collector_image == "" ? false : var.scheduler_enabled
+  value = var.collector_image == "" || !var.create_scheduler ? false : var.scheduler_enabled
+}
+
+output "collector_scheduler_created" {
+  value = var.collector_image != "" && var.create_scheduler
 }

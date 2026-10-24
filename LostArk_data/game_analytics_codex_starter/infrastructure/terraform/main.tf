@@ -43,11 +43,11 @@ resource "google_storage_bucket" "bronze" {
   labels                      = local.labels
 
   versioning {
-    enabled = false
+    enabled = true
   }
 
   soft_delete_policy {
-    retention_duration_seconds = 0
+    retention_duration_seconds = 604800
   }
 
   lifecycle_rule {
@@ -303,7 +303,7 @@ resource "google_cloud_run_v2_job" "collector" {
 
         resources {
           limits = {
-            cpu    = "0.5"
+            cpu    = "1"
             memory = "512Mi"
           }
         }
@@ -339,7 +339,7 @@ resource "google_cloud_run_v2_job" "collector" {
 }
 
 resource "google_cloud_run_v2_job_iam_member" "scheduler_invoker" {
-  for_each = google_cloud_run_v2_job.collector
+  for_each = var.create_scheduler ? google_cloud_run_v2_job.collector : {}
 
   project  = var.project_id
   location = var.region
@@ -355,7 +355,7 @@ resource "google_service_account_iam_member" "scheduler_token_creator" {
 }
 
 resource "google_cloud_scheduler_job" "collector" {
-  for_each = google_cloud_run_v2_job.collector
+  for_each = var.create_scheduler ? google_cloud_run_v2_job.collector : {}
 
   project          = var.project_id
   region           = var.region

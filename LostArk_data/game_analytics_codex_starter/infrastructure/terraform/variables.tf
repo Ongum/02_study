@@ -48,3 +48,14 @@ variable "scheduler_enabled" {
   type        = bool
   default     = false
 }
+
+variable "create_scheduler" {
+  description = "Creates the Scheduler resource. Keep false for manual one-time collection."
+  type        = bool
+  default     = false
+
+  validation {
+    condition     = var.create_scheduler || !var.scheduler_enabled
+    error_message = "scheduler_enabled cannot be true when create_scheduler is false."
+  }
+}

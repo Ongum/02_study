@@ -1,6 +1,6 @@
 # Entertainment Data Platform
 
-> **Status: Complete local 180-day review baseline, aggregate prototypes and offline-tested cloud adapter; not deployed.** No scheduled ingestion, verified cloud execution, causal KPI result, or business outcome is claimed.
+> **Status: Local 180-day baseline plus one verified manual GCP batch; no recurring schedule.** One Cloud Run execution loaded bounded review, player and news data to GCS/BigQuery. No causal KPI result or business outcome is claimed.
 
 [Current three-state implementation checklist](docs/STATUS_CHECKLIST.md)
 
@@ -16,7 +16,7 @@ Data engineering should make better decisions possible. This project links **dat
 - Secondary: change in comparable observed concurrent-player snapshots; issue detection latency.
 - Attribution caution: observational patch comparisons are **not causal proofs**. Public Steam reviews are a non-representative opt-in sample.
 
-## Target architecture (partially implemented locally; not deployed)
+## Target architecture (manual cloud path verified; Scheduler absent)
 `Cloud Scheduler → Cloud Run Jobs → GCS (Bronze) → BigQuery (Silver) → dbt (Gold) → analysis/dashboard`
 
 Design for additional game/content connectors and marts; not for forcing all domains into one schema. ADR-001 approved hybrid bootstrap with Terraform-managed workload resources. No need to keep a personal computer always on after a verified deployment.
@@ -192,15 +192,16 @@ one source failed or reached its safety page cap; inspect the manifest instead
 of treating partial Raw files as complete coverage. This command is not a
 scheduler and does not create GCP resources.
 
-### Offline-tested GCP collector adapter
+### GCP collector adapter and first manual run
 
 `entertainment_platform.jobs.collect_gcp_incremental` adapts the same bounded
 collectors to GCS canonical state and Bronze objects, generation-based source
 locks, deterministic BigQuery load job IDs and per-run manifests. Offline fake
-tests cover lock release, checkpoint bootstrap enforcement, cadence selection,
-valid zero-row state, byte-identical execution retry and rejection of differing
-immutable-object collisions. These tests do not prove ADC, IAM, GCS, BigQuery,
-Cloud Run or Scheduler behavior in the selected project.
+tests cover recovery behavior. On 2026-10-24, one manual Cloud Run execution
+completed in 24.35 seconds and produced 100 review rows, one current-player
+snapshot and one recent-news row in BigQuery, with matching GCS state and
+manifests. Scheduler was not created; this is one-run operational evidence, not
+continuous reliability evidence.
 
 ```text
 python -m pytest tests/test_gcp_collection.py -q
