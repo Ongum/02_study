@@ -1,0 +1,7 @@
+project_id         = "replace-with-dedicated-project-id"
+billing_account_id = "000000-000000-000000"
+region             = "asia-northeast1"
+monthly_budget_jpy = 1000
+raw_retention_days = 30
+collector_image     = ""
+scheduler_enabled   = false

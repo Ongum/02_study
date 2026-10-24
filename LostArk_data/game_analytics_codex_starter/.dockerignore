@@ -1,0 +1,14 @@
+.git
+.venv
+.terraform
+.tools
+.pytest_cache
+.pytest_tmp
+.ruff_cache
+raw_data
+output
+infrastructure/terraform/terraform.tfvars
+*.tfstate
+*.tfstate.*
+__pycache__
+*.pyc

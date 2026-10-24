@@ -1,0 +1,52 @@
+{
+  "response": {
+    "_fixture_notice": "SYNTHETIC TEST DATA - NOT A CAPTURED STEAM RESPONSE",
+    "query_summary": {
+      "num_reviews": 2,
+      "review_score": 0,
+      "review_score_desc": "Synthetic",
+      "total_positive": 1,
+      "total_negative": 1,
+      "total_reviews": 2
+    },
+    "reviews": [
+    {
+      "recommendationid": "90000000000000001",
+      "language": "english",
+      "review": "Synthetic negative review for parser testing only.",
+      "timestamp_created": 1760918400,
+      "timestamp_updated": 1760918400,
+      "voted_up": false,
+      "votes_up": 3,
+      "votes_funny": 0,
+      "weighted_vote_score": 0.75,
+      "comment_count": 1,
+      "steam_purchase": true,
+      "received_for_free": false,
+      "written_during_early_access": false,
+      "primarily_steam_deck": false,
+      "refunded": false
+    },
+    {
+      "recommendationid": "90000000000000002",
+      "language": "koreana",
+      "review": "파서 테스트용 합성 긍정 리뷰입니다.",
+      "timestamp_created": 1760922000,
+      "timestamp_updated": 1760925600,
+      "voted_up": true,
+      "votes_up": 1,
+      "votes_funny": 0,
+      "weighted_vote_score": 0.5,
+      "comment_count": 0,
+      "steam_purchase": true,
+      "received_for_free": false,
+      "written_during_early_access": false,
+      "primarily_steam_deck": false,
+      "refunded": false
+    }
+    ],
+    "cursor": "synthetic-next-cursor",
+    "day_range_used": 90,
+    "total_matching": 2
+  }
+}

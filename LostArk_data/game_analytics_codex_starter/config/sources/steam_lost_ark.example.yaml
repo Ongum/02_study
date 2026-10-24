@@ -1,0 +1,26 @@
+source: steam
+appid: 1599340
+language_scope: all_available
+nlp_priority_language: english
+backfill_days: 90
+schedules:
+  reviews_hours: 6
+  current_players_hours: 1
+  news_hours: 24
+api:
+  review_interface: IUserReviewsService/GetAppReviews/v1
+  verify_input_json_and_enums: true
+  max_retries: 3 # plus first attempt = 4
+  retry_base_delay_seconds: 1
+  retry_max_delay_seconds: 30
+  retry_jitter_ratio: 0.25
+  retry_after_over_max_delay: stop_without_early_retry
+  checkpoint_only_after_durable_validation: true
+  on_429: respect_retry_after_then_backoff
+cloud:
+  region: asia-northeast1
+  project_id: TO_BE_CHOSEN
+  scheduler_enabled: false
+cost:
+  budget_target_jpy: 1000
+  alert_only_not_hard_cap: true

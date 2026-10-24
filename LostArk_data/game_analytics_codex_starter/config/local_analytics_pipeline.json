@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "appid": 1599340,
+  "inputs": {
+    "review_history": "output/silver_review_history_180d.jsonl",
+    "news": "output/silver_app_news_180d.jsonl",
+    "news_raw": "raw_data/news/lostark-news-180d-20261021/page-0001-bc5259a5f88a.json",
+    "player_snapshots": "output/fact_player_snapshot.jsonl",
+    "collection_health_config": "config/collection_health.json"
+  },
+  "outputs": {
+    "reviews_current": "output/silver_reviews_current_180d.jsonl",
+    "review_daily": "output/mart_review_daily_180d.jsonl",
+    "review_weekly": "output/mart_review_weekly_180d.jsonl",
+    "review_language": "output/mart_review_language_180d.jsonl",
+    "review_issue": "output/mart_issue_language_180d.jsonl",
+    "review_summary": "output/review_analysis_summary_180d.json",
+    "update_classification": "output/dim_update_event_classification.jsonl",
+    "event_time_evidence": "output/dim_event_time_evidence.jsonl",
+    "update_impact": "output/mart_update_impact_draft_180d.jsonl",
+    "update_decision": "output/mart_update_decision_180d.jsonl",
+    "player_summary": "output/player_snapshot_summary.json",
+    "collection_health": "output/mart_collection_health.jsonl",
+    "collection_health_summary": "output/collection_health_summary.json",
+    "run_manifest": "output/local_analytics_run_manifest.json"
+  }
+}

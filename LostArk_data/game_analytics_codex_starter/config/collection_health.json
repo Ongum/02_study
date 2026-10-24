@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "freshness_tolerance_multiplier": 1.5,
+  "sources": [
+    {
+      "source_id": "steam_reviews_backfill_180d",
+      "collection_mode": "bounded_backfill",
+      "execution_status": "completed_local",
+      "target_cadence_hours": null,
+      "minimum_runs_for_analysis": 2,
+      "data_path": "output/silver_review_history_180d.jsonl",
+      "time_input": {
+        "kind": "json_glob",
+        "pattern": "output/backfill_*90d_checkpoint.json",
+        "field": "committed_at"
+      },
+      "checkpoint_pattern": "output/backfill_*90d_checkpoint.json"
+    },
+    {
+      "source_id": "steam_reviews_updated",
+      "collection_mode": "incremental_micro_batch",
+      "execution_status": "manual_local",
+      "target_cadence_hours": 6,
+      "minimum_runs_for_analysis": 12,
+      "data_path": "output/silver_review_history_updates.jsonl",
+      "time_input": {
+        "kind": "json_glob",
+        "pattern": "raw_data/updated_live/**/page-*.metadata.json",
+        "field": "fetched_at"
+      },
+      "checkpoint_pattern": "output/updated_live_checkpoint.json",
+      "raw_observation_pattern": "raw_data/updated_live/**/page-*.json"
+    },
+    {
+      "source_id": "steam_current_players",
+      "collection_mode": "snapshot_micro_batch",
+      "execution_status": "manual_local",
+      "target_cadence_hours": 1,
+      "minimum_runs_for_analysis": 168,
+      "data_path": "output/fact_player_snapshot.jsonl",
+      "time_input": {
+        "kind": "jsonl",
+        "path": "output/fact_player_snapshot.jsonl",
+        "field": "observed_at"
+      }
+    },
+    {
+      "source_id": "steam_app_news",
+      "collection_mode": "incremental_micro_batch",
+      "execution_status": "manual_local",
+      "target_cadence_hours": 24,
+      "minimum_runs_for_analysis": 7,
+      "data_path": "output/silver_app_news_180d.jsonl",
+      "time_input": {
+        "kind": "json_glob",
+        "pattern": "output/**/news*checkpoint*.json",
+        "field": "committed_at"
+      },
+      "checkpoint_pattern": "output/**/news*checkpoint*.json"
+    }
+  ]
+}

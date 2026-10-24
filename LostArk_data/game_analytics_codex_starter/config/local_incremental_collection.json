@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "appid": 1599340,
+  "lock_path": "output/locks/local_incremental_collection.lock",
+  "manifest_directory": "output/incremental_runs",
+  "reviews": {
+    "raw_directory": "raw_data/updated_live",
+    "normalized_output": "output/silver_review_history_updates.jsonl",
+    "checkpoint": "output/updated_live_checkpoint.json",
+    "max_pages": 20,
+    "page_size": 100,
+    "timeout_seconds": 20.0
+  },
+  "players": {
+    "raw_directory": "raw_data/current_players",
+    "output": "output/fact_player_snapshot.jsonl",
+    "timeout_seconds": 20.0
+  },
+  "news": {
+    "raw_directory": "raw_data/news_incremental",
+    "output": "output/silver_app_news_180d.jsonl",
+    "checkpoint_directory": "output/news_incremental_checkpoints",
+    "lookback_hours": 48,
+    "max_pages": 3,
+    "page_size": 100,
+    "request_interval_seconds": 1.0,
+    "timeout_seconds": 20.0
+  }
+}
